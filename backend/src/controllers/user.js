@@ -3,36 +3,67 @@ const { setUser } = require("../services/auth")
 const bcrypt = require("bcryptjs")
 
 async function signUp(req, res) {
-    const { username, password } = req.body
-    if (!username || !password)
-        return res.status(400).json({ error: "username and password are required" })
+  const { username, email, password } = req.body
 
-    const existing = await User.findOne({ username })
-    if (existing)
-        return res.status(409).json({ error: "username already exists" })
+  if (!password)
+    return res.status(400).json({ error: "Password is required" })
 
-    const hashed = await bcrypt.hash(password, 10)
-    await User.create({ username, password: hashed })
+  if (!username && !email)
+    return res.status(400).json({ error: "Username or email is required" })
 
-    return res.status(201).json({ message: "Sign up successful!" })
+  if (username) {
+    const existingUsername = await User.findOne({ username })
+    if (existingUsername)
+      return res.status(409).json({ error: "Username already exists" })
+  }
+
+  if (email) {
+    const existingEmail = await User.findOne({ email })
+    if (existingEmail)
+      return res.status(409).json({ error: "Email already exists" })
+  }
+
+  const hashed = await bcrypt.hash(password, 10)
+  const userData = { password: hashed }
+  if (username) userData.username = username
+  if (email) userData.email = email
+
+  await User.create(userData)
+
+  return res.status(201).json({ message: "Sign up successful!" })
 }
 
 async function signIn(req, res) {
-    const { username, password } = req.body
-    if (!username || !password)
-        return res.status(400).json({ error: "username and password are required" })
+  const { username, email, password } = req.body
 
-    const user = await User.findOne({ username })
-    if (!user)
-        return res.status(401).json({ error: "Invalid credentials" })
+  if (!password)
+    return res.status(400).json({ error: "Password is required" })
+  if (!username && !email)
+    return res.status(400).json({ error: "Username or email is required" })
 
-    const valid = await bcrypt.compare(password, user.password)
-    if (!valid)
-        return res.status(401).json({ error: "Invalid credentials" })
+  // Find user by username or email
+  const user = await User.findOne(
+    username ? { username } : { email }
+  )
+  if (!user)
+    return res.status(401).json({ error: "Invalid credentials" })
 
-    const token = setUser(user)
-    res.cookie("uid", token, { httpOnly: true, maxAge: 7*24*60*60*1000 }) // 7 days
-    return res.json({ message: "Sign in successful!" })
+  const valid = await bcrypt.compare(password, user.password)
+  if (!valid)
+    return res.status(401).json({ error: "Invalid credentials" })
+
+  const token = setUser(user)
+  res.cookie("uid", token, {
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  })
+  return res.json({ message: "Sign in successful!" })
 }
 
-module.exports = { signUp, signIn }
+async function getMe(req, res) {
+  res.json({ user: req.user })
+}
+
+module.exports = { signUp, signIn, getMe }
