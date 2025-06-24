@@ -1,15 +1,16 @@
 const Joi = require("joi");
 
-const signUpSchema = Joi.object({
+const updateUserSchema = Joi.object({
   username: Joi.string().alphanum().min(3).max(30),
   email: Joi.string().email(),
-  password: Joi.string().min(6).max(128).required()
-}).or('username', 'email'); 
+  oldPassword: Joi.string().min(6).max(128),
+  newPassword: Joi.string().min(6).max(128),
+}).or('username', 'email', 'oldPassword') 
+  .with('oldPassword', 'newPassword')
+  .with('newPassword', 'oldPassword');
 
-const signInSchema = Joi.object({
-  username: Joi.string().alphanum().min(3).max(30),
-  email: Joi.string().email(),
-  password: Joi.string().min(6).max(128).required()
-}).or('username', 'email'); 
+const changeRoleSchema = Joi.object({
+  role: Joi.string().valid("user", "admin").required()
+});
 
-module.exports = { signUpSchema, signInSchema };
+module.exports = { updateUserSchema, changeRoleSchema };
