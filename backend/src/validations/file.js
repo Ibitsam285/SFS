@@ -24,7 +24,7 @@ const shareFileSchema = Joi.object({
 const revokeFileSchema = Joi.object({
   userIds: Joi.array().items(Joi.string().hex().length(24)).optional(),
   groupIds: Joi.array().items(Joi.string().hex().length(24)).optional(),
-  all: Joi.boolean().optional() 
+  all: Joi.boolean().optional()
 }).or('userIds', 'groupIds', 'all');
 
 module.exports = {
