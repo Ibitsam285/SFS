@@ -1,4 +1,6 @@
 const User = require("../models/user");
+const bcrypt = require("bcryptjs");
+const { logAction } = require("../utils/auditLogger");
 
 async function getMe(req, res) {
   const user = await User.findById(req.user._id).select("-password");
@@ -10,53 +12,6 @@ async function getUserById(req, res) {
   const user = await User.findById(req.params.id).select("-password");
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
-}
-
-async function updateUser(req, res) {
-  if (req.user._id !== req.params.id && req.user.role !== "admin") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-
-  const updates = {};
-  if (req.body.username) updates.username = req.body.username;
-  if (req.body.email) updates.email = req.body.email;
-
-  if (req.body.username) {
-    const existing = await User.findOne({ username: req.body.username, _id: { $ne: req.params.id } });
-    if (existing) return res.status(409).json({ error: "Username already exists" });
-  }
-  if (req.body.email) {
-    const existing = await User.findOne({ email: req.body.email, _id: { $ne: req.params.id } });
-    if (existing) return res.status(409).json({ error: "Email already exists" });
-  }
-
-  const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).select("-password");
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ message: "User updated successfully", user });
-}
-
-async function deleteUser(req, res) {
-  if (req.user._id !== req.params.id && req.user.role !== "admin") {
-    return res.status(403).json({ error: "Forbidden" });
-  }
-  const user = await User.findByIdAndDelete(req.params.id);
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ message: "User deleted successfully" });
-}
-
-async function listUsers(req, res) {
-  const users = await User.find().select("-password");
-  res.json(users);
-}
-
-async function changeUserRole(req, res) {
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
-    { role: req.body.role },
-    { new: true, runValidators: true }
-  ).select("-password");
-  if (!user) return res.status(404).json({ error: "User not found" });
-  res.json({ message: "Role updated", user });
 }
 
 async function updateUser(req, res) {
@@ -93,9 +48,57 @@ async function updateUser(req, res) {
 
   const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).select("-password");
   if (!user) return res.status(404).json({ error: "User not found" });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "UPDATE_USER",
+    targetType: "User",
+    targetId: req.params.id
+  });
+
   res.json({ message: "User updated successfully", user });
 }
 
+async function deleteUser(req, res) {
+  if (req.user._id !== req.params.id && req.user.role !== "admin") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
+  const user = await User.findByIdAndDelete(req.params.id);
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "DELETE_USER",
+    targetType: "User",
+    targetId: req.params.id
+  });
+
+  res.clearCookie("uid");
+  res.json({ message: "User deleted successfully" });
+}
+
+async function listUsers(req, res) {
+  const users = await User.find().select("-password");
+  res.json(users);
+}
+
+async function changeUserRole(req, res) {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { role: req.body.role },
+    { new: true, runValidators: true }
+  ).select("-password");
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "CHANGE_USER_ROLE",
+    targetType: "User",
+    targetId: req.params.id
+  });
+
+  res.json({ message: "Role updated", user });
+}
 
 module.exports = {
   getMe,
@@ -104,5 +107,4 @@ module.exports = {
   deleteUser,
   listUsers,
   changeUserRole,
-  updateUser
 };

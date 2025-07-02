@@ -1,5 +1,11 @@
 const Group = require("../models/group");
 const User = require("../models/user");
+const { logAction } = require("../utils/auditLogger");
+
+async function listAllGroups(req, res) {
+  const groups = await Group.find();
+  res.json(groups);
+}
 
 async function listGroups(req, res) {
   const groups = await Group.find({ members: req.user._id });
@@ -14,6 +20,14 @@ async function createGroup(req, res) {
     { _id: { $in: uniqueMembers } },
     { $addToSet: { groups: group._id } }
   );
+
+  await logAction({
+    actorId: req.user._id,
+    action: "CREATE_GROUP",
+    targetType: "Group",
+    targetId: group._id
+  });
+
   res.status(201).json(group);
 }
 
@@ -34,6 +48,14 @@ async function updateGroup(req, res) {
     return res.status(403).json({ error: "Forbidden" });
   group.name = req.body.name;
   await group.save();
+
+  await logAction({
+    actorId: req.user._id,
+    action: "UPDATE_GROUP",
+    targetType: "Group",
+    targetId: group._id
+  });
+
   res.json(group);
 }
 
@@ -47,6 +69,14 @@ async function deleteGroup(req, res) {
     { $pull: { groups: group._id } }
   );
   await Group.deleteOne({ _id: req.params.id });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "DELETE_GROUP",
+    targetType: "Group",
+    targetId: group._id
+  });
+
   res.json({ message: "Group deleted" });
 }
 
@@ -59,6 +89,14 @@ async function addMembers(req, res) {
   group.members = [...group.members, ...userIds];
   await group.save();
   await User.updateMany({ _id: { $in: userIds } }, { $addToSet: { groups: group._id } });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "ADD_GROUP_MEMBER",
+    targetType: "Group",
+    targetId: group._id
+  });
+
   res.json(group);
 }
 
@@ -73,6 +111,14 @@ async function removeMembers(req, res) {
     group.members.push(group.owner);
   await group.save();
   await User.updateMany({ _id: { $in: userIds } }, { $pull: { groups: group._id } });
+
+  await logAction({
+    actorId: req.user._id,
+    action: "REMOVE_GROUP_MEMBER",
+    targetType: "Group",
+    targetId: group._id
+  });
+
   res.json(group);
 }
 
@@ -84,4 +130,5 @@ module.exports = {
   deleteGroup,
   addMembers,
   removeMembers,
+  listAllGroups
 };
