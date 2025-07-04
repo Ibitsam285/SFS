@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { logAction } = require("../utils/auditLogger");
+const { sendNotification } = require("../utils/notificationService");
 
 async function getMe(req, res) {
   const user = await User.findById(req.user._id).select("-password");
@@ -9,6 +10,7 @@ async function getMe(req, res) {
 }
 
 async function getUserById(req, res) {
+
   const user = await User.findById(req.params.id).select("-password");
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
@@ -49,13 +51,15 @@ async function updateUser(req, res) {
   const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true }).select("-password");
   if (!user) return res.status(404).json({ error: "User not found" });
 
-  await logAction({
+  const log = await logAction({
     actorId: req.user._id,
     action: "UPDATE_USER",
     targetType: "User",
     targetId: req.params.id
   });
 
+  console.log("Audit log created:", log);
+  
   res.json({ message: "User updated successfully", user });
 }
 
@@ -97,7 +101,31 @@ async function changeUserRole(req, res) {
     targetId: req.params.id
   });
 
+  await sendNotification({
+    recipientId: req.params.id,
+    type: "ROLE_CHANGED",
+    content: `Your role was changed to ${req.body.role} by admin.`
+  });
+
   res.json({ message: "Role updated", user });
+}
+
+async function searchUsers(req, res) {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+
+  const search = req.params.searchText || "";
+  if (!search) return res.json([]);
+
+  const users = await User.find({
+    $or: [
+      { username: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } }
+    ]
+  })
+    .limit(10)
+    .select("_id username email");
+
+  res.json(users);
 }
 
 module.exports = {
@@ -107,4 +135,5 @@ module.exports = {
   deleteUser,
   listUsers,
   changeUserRole,
+  searchUsers
 };

@@ -8,8 +8,9 @@ const {
   addMembers,
   removeMembers,
   listGroups,
+  listAllGroups,
 } = require("../controllers/group");
-const { restrict } = require("../middlewares/auth");
+const { restrict, restrictRole } = require("../middlewares/auth");
 const { validateBody } = require("../middlewares/validate");
 const {
   createGroupSchema,
@@ -17,6 +18,7 @@ const {
   memberOpsSchema,
 } = require("../validations/group");
 
+router.get("/all", restrict, restrictRole(["admin"]), listAllGroups);
 router.get("/", restrict, listGroups);
 router.post("/", restrict, validateBody(createGroupSchema), createGroup);
 router.get("/:id", restrict, getGroup);

@@ -8,8 +8,8 @@ async function isFieldTaken(field, value) {
 }
 
 async function signUp(req, res) {
-  const { username, email, password } = req.body
-
+  const { username, email, password, role } = req.body
+  console.log(req.body)
   if (!password)
     return res.status(400).json({ error: "Password is required" })
   if (!username && !email)
@@ -20,10 +20,13 @@ async function signUp(req, res) {
   if (await isFieldTaken('email', email))
     return res.status(409).json({ error: "Email already exists" })
 
-  const hashed = await bcrypt.hash(password, 10)
+  const saltRounds = Number(process.env.SALT_ROUNDS) || 10;
+  const hashed = await bcrypt.hash(password, saltRounds)
   const userData = { password: hashed }
   if (username) userData.username = username
   if (email) userData.email = email
+  
+  if (role) userData.role = role
 
   await User.create(userData)
   return res.status(201).json({ message: "Sign up successful!" })
@@ -47,14 +50,13 @@ async function signIn(req, res) {
   res.cookie("uid", token, {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
   })
   return res.json({ message: "Sign in successful!" })
 }
 
-async function getMe(req, res) {
-  res.json({ user: req.user })
+function logOut(req, res) {
+  res.clearCookie("uid")
+  return res.json({ message: "Logged out successfully!" })
 }
 
-module.exports = { signUp, signIn, getMe }
+module.exports = { signUp, signIn, logOut }

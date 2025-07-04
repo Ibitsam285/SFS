@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { restrict } = require("../middlewares/auth");
+const { restrict, restrictRole } = require("../middlewares/auth");
+const { getFileLogs } = require("../controllers/auditLog");
 const {
   uploadFile,
   listFiles,
@@ -9,7 +10,8 @@ const {
   deleteFile,
   updateAccess,
   shareFile,
-  revokeFile
+  revokeFile,
+  listAllFiles
 } = require("../controllers/file");
 const { validateBody } = require("../middlewares/validate");
 const {
@@ -21,11 +23,13 @@ const {
 
 router.post("/", restrict, validateBody(uploadFileSchema), uploadFile);
 router.get("/", restrict, listFiles);
+router.get("/all", restrict, restrictRole(["admin"]), listAllFiles);
 router.get("/:id", restrict, getFile);
 router.get("/:id/download", restrict, downloadFile);
 router.delete("/:id", restrict, deleteFile);
 router.patch("/:id/access", restrict, validateBody(updateAccessSchema), updateAccess);
 router.post("/:id/share", restrict, validateBody(shareFileSchema), shareFile);
 router.post("/:id/revoke", restrict, validateBody(revokeFileSchema), revokeFile);
+router.get("/:id/audit", restrict, getFileLogs);
 
 module.exports = router;

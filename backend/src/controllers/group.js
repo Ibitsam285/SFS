@@ -1,6 +1,7 @@
 const Group = require("../models/group");
 const User = require("../models/user");
 const { logAction } = require("../utils/auditLogger");
+const { sendNotification } = require("../utils/notificationService");
 
 async function listAllGroups(req, res) {
   const groups = await Group.find();
@@ -27,6 +28,15 @@ async function createGroup(req, res) {
     targetType: "Group",
     targetId: group._id
   });
+
+  const notifyIds = uniqueMembers.filter(id => id.toString() !== req.user._id.toString());
+  for (const memberId of notifyIds) {
+    await sendNotification({
+      recipientId: memberId,
+      type: "GROUP_ADDED",
+      content: `You were added to group "${name}".`
+    });
+  }
 
   res.status(201).json(group);
 }
@@ -77,6 +87,15 @@ async function deleteGroup(req, res) {
     targetId: group._id
   });
 
+  const notifyIds = group.members.filter(id => id.toString() !== req.user._id.toString());
+  for (const memberId of notifyIds) {
+    await sendNotification({
+      recipientId: memberId,
+      type: "GROUP_REMOVED",
+      content: `Group "${group.name}" was deleted.`
+    });
+  }
+
   res.json({ message: "Group deleted" });
 }
 
@@ -96,6 +115,14 @@ async function addMembers(req, res) {
     targetType: "Group",
     targetId: group._id
   });
+
+  for (const memberId of userIds) {
+    await sendNotification({
+      recipientId: memberId,
+      type: "GROUP_ADDED",
+      content: `You were added to group "${group.name}".`
+    });
+  }
 
   res.json(group);
 }
@@ -118,6 +145,14 @@ async function removeMembers(req, res) {
     targetType: "Group",
     targetId: group._id
   });
+
+  for (const memberId of userIds) {
+    await sendNotification({
+      recipientId: memberId,
+      type: "GROUP_REMOVED",
+      content: `You were removed from group "${group.name}".`
+    });
+  }
 
   res.json(group);
 }

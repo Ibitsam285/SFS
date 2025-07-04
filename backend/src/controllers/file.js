@@ -1,6 +1,7 @@
 const File = require("../models/file");
 const User = require("../models/user");
 const { logAction } = require("../utils/auditLogger");
+const { sendNotification } = require("../utils/notificationService");
 
 async function listAllFiles(req, res) {
   const files = await File.find();
@@ -142,6 +143,9 @@ async function shareFile(req, res) {
   if (!file.ownerId.equals(req.user._id) && req.user.role !== "admin")
     return res.status(403).json({ error: "Forbidden" });
   const { userIds = [], groupIds = [] } = req.body;
+  const newUserRecipients = userIds.filter(
+    id => !file.recipients.map(String).includes(id)
+  );
   file.recipients = Array.from(new Set([...file.recipients, ...userIds]));
   file.recipientGroups = Array.from(new Set([...file.recipientGroups, ...groupIds]));
   await file.save();
@@ -153,6 +157,15 @@ async function shareFile(req, res) {
     targetId: file._id
   });
 
+  for (const recipientId of newUserRecipients) {
+    await sendNotification({
+      recipientId,
+      type: "FILE_SHARED",
+      content: `A file "${file.filename}" was shared with you.`
+    });
+  }
+
+
   res.json(file);
 }
 
@@ -162,13 +175,18 @@ async function revokeFile(req, res) {
   if (!file.ownerId.equals(req.user._id) && req.user.role !== "admin")
     return res.status(403).json({ error: "Forbidden" });
   const { userIds = [], groupIds = [], all = false } = req.body;
+
+  let revokedUserIds = [];
   if (all) {
+    revokedUserIds = file.recipients.map(String);
     file.recipients = [];
     file.recipientGroups = [];
     file.accessControl.revoked = true;
   } else {
-    if (userIds.length)
+    if (userIds.length) {
+      revokedUserIds = file.recipients.filter(id => userIds.includes(id.toString())).map(String);
       file.recipients = file.recipients.filter(id => !userIds.includes(id.toString()));
+    }
     if (groupIds.length)
       file.recipientGroups = file.recipientGroups.filter(id => !groupIds.includes(id.toString()));
   }
@@ -180,6 +198,14 @@ async function revokeFile(req, res) {
     targetType: "File",
     targetId: file._id
   });
+
+  for (const revokedId of revokedUserIds) {
+    await sendNotification({
+      recipientId: revokedId,
+      type: "FILE_REVOKED",
+      content: `Your access to file "${file.filename}" was revoked.`
+    });
+  }
 
   res.json(file);
 }

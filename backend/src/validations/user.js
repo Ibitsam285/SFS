@@ -5,7 +5,7 @@ const updateUserSchema = Joi.object({
   email: Joi.string().email(),
   oldPassword: Joi.string().min(6).max(128),
   newPassword: Joi.string().min(6).max(128),
-}).or('username', 'email', 'oldPassword') 
+}).or('username', 'email', 'oldPassword')
   .with('oldPassword', 'newPassword')
   .with('newPassword', 'oldPassword');
 
