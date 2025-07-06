@@ -1,0 +1,78 @@
+import { useForm } from "react-hook-form";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate, Link } from "react-router-dom";
+import { useState } from "react";
+
+function isEmail(val) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+}
+
+function SignIn() {
+  const { signin } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
+
+  const onSubmit = async (data) => {
+    setError("");
+    let payload = { password: data.password };
+    if (data.identifier) {
+      if (isEmail(data.identifier)) {
+        payload.email = data.identifier;
+      } else {
+        payload.username = data.identifier;
+      }
+    }
+    try {
+      await signin(payload);
+      navigate("/");
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+        "Sign in failed. Please check your credentials."
+      );
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] px-2">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="w-full max-w-sm bg-gray-900 p-8 rounded-lg shadow"
+      >
+        <h2 className="text-2xl font-bold text-blue-400 mb-6 text-center">Sign In</h2>
+        {error && <div className="bg-red-800 text-red-200 rounded px-3 py-2 mb-4">{error}</div>}
+        <div className="mb-4">
+          <label className="block text-gray-300 mb-1">Username or Email</label>
+          <input
+            {...register("identifier", { required: true })}
+            className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 focus:border-blue-400 outline-none"
+            autoFocus
+            placeholder="Enter username or email"
+          />
+        </div>
+        <div className="mb-6">
+          <label className="block text-gray-300 mb-1">Password</label>
+          <input
+            {...register("password", { required: true })}
+            type="password"
+            className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 focus:border-blue-400 outline-none"
+          />
+        </div>
+        <button
+          type="submit"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded transition disabled:opacity-70"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Signing in..." : "Sign In"}
+        </button>
+        <div className="text-gray-400 mt-6 text-center">
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="text-blue-400 hover:underline">Sign up</Link>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export default SignIn;
