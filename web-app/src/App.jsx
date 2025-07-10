@@ -21,6 +21,12 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/signin" />;
 }
 
+function HomeRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <UserLanding /> : <Landing />;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -29,7 +35,7 @@ function App() {
           <Navbar />
           <main className="flex-grow">
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<HomeRoute />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/download" element={<DownloadFile />} />
