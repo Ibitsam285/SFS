@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../utils/api";
+import { storeFileKey } from "../utils/KeyVault";
 
 async function generateKeyAndIV() {
   const key = await window.crypto.subtle.generateKey(
@@ -7,6 +8,7 @@ async function generateKeyAndIV() {
     true,
     ["encrypt", "decrypt"]
   );
+  const iv = window.crypto.getRandomValues(new Uint8Array(12)); 
   return { key, iv };
 }
 
@@ -39,6 +41,7 @@ function EncryptFile() {
   const [showSaveKey, setShowSaveKey] = useState(false);
   const [passphrase, setPassphrase] = useState("");
   const [fileId, setFileId] = useState("");
+  const [encryptedData, setEncryptedData] = useState(null); 
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -49,6 +52,7 @@ function EncryptFile() {
     setShowSaveKey(false);
     setPassphrase("");
     setFileId("");
+    setEncryptedData(null);
   };
 
   const handleUpload = async (e) => {
@@ -61,6 +65,7 @@ function EncryptFile() {
     const { key, iv } = await generateKeyAndIV();
 
     const encrypted = await encryptData(buffer, key, iv);
+    setEncryptedData(encrypted); // store for download
 
     const exportedKey = await exportKey(key);
     const ivB64 = arrayBufferToBase64(iv);
@@ -80,6 +85,7 @@ function EncryptFile() {
         encryptedData: encryptedDataB64,
         metadata,
       });
+      setFileId(resp.data._id); 
       setStatus("Upload successful!");
       setDownloadKey(`Key: ${exportedKey}\nIV: ${ivB64}`);
       setShowSaveKey(true);
@@ -96,6 +102,17 @@ function EncryptFile() {
     await storeFileKey(fileId, { key, iv }, passphrase);
     setStatus("Key saved in browser!");
     setShowSaveKey(false);
+  };
+
+  const handleDownloadEncrypted = () => {
+    if (!encryptedData || !filename) return;
+    const blob = new Blob([encryptedData], { type: "application/octet-stream" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename + ".encrypted";
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -122,6 +139,14 @@ function EncryptFile() {
           <div className="bg-gray-800 text-blue-300 p-3 mt-4 rounded text-sm break-all">
             <strong>Keep this key and IV to decrypt your file later!</strong>
             <pre className="whitespace-pre-wrap">{downloadKey}</pre>
+            <button
+              type="button"
+              className="bg-green-700 hover:bg-green-800 text-white rounded py-1 px-3 mt-3"
+              onClick={handleDownloadEncrypted}
+              disabled={!encryptedData}
+            >
+              Download Encrypted File
+            </button>
           </div>
         )}
         {showSaveKey && (

@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../utils/api";
+import { loadFileKey } from "../utils/KeyVault";
+import { useAuth } from "../context/AuthContext";
 
+// --- Crypto helpers ---
 function base64ToArrayBuffer(base64) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -34,9 +37,17 @@ async function decryptData(encryptedBase64, base64Key, base64IV) {
   return new Uint8Array(decrypted);
 }
 
-function DownloadFile() {
+// --- Main Component ---
+export default function DecryptFile() {
+  const { user } = useAuth();
+  const isGuest = !user;
+
+  // For logged-in users: allow select or upload
   const [files, setFiles] = useState([]);
   const [selectedFileId, setSelectedFileId] = useState("");
+  const [fileUploadMode, setFileUploadMode] = useState(isGuest ? "upload" : "select"); // "select" or "upload"
+  const [uploadedEncrypted, setUploadedEncrypted] = useState(null);
+  const [uploadedMeta, setUploadedMeta] = useState({});
   const [key, setKey] = useState("");
   const [iv, setIV] = useState("");
   const [status, setStatus] = useState("");
@@ -44,36 +55,85 @@ function DownloadFile() {
   const [passphrase, setPassphrase] = useState("");
   const [needsPassphrase, setNeedsPassphrase] = useState(false);
 
+  const uploadedFileRef = useRef();
+
   useEffect(() => {
+    if (isGuest) return;
     api.get("/files")
       .then(res => setFiles(res.data))
       .catch(() => setFiles([]));
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
-    if (!selectedFileId) {
+    if (fileUploadMode === "select" && !selectedFileId) {
       setKey(""); setIV(""); setNeedsPassphrase(false);
       return;
     }
-    setNeedsPassphrase(true);
-    setKey(""); setIV("");
-  }, [selectedFileId]);
+    if (fileUploadMode === "select") {
+      setNeedsPassphrase(true);
+      setKey(""); setIV("");
+    }
+  }, [fileUploadMode, selectedFileId]);
 
-  const handleLoadKey = async () => {
-    if (!selectedFileId || !passphrase) return;
-    setStatus("Loading key from browser...");
-    const bundle = await loadFileKey(selectedFileId, passphrase);
-    if (bundle && bundle.key && bundle.iv) {
-      setKey(bundle.key);
-      setIV(bundle.iv);
-      setStatus("Key loaded!");
-      setNeedsPassphrase(false);
-    } else {
-      setStatus("Failed to load key: wrong passphrase or not saved.");
+  // --- Handle Upload of Encrypted File ---
+  const handleEncryptedUpload = (e) => {
+    const f = e.target.files[0];
+    if (!f) {
+      setUploadedEncrypted(null);
+      setUploadedMeta({});
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      let base64;
+      if (/^data:/.test(ev.target.result)) {
+        base64 = ev.target.result.split(",")[1];
+      } else {
+        base64 = btoa(String.fromCharCode(...new Uint8Array(ev.target.result)));
+      }
+      setUploadedEncrypted(base64);
+      setUploadedMeta({
+        filename: f.name,
+        type: f.type,
+        size: f.size,
+      });
+      setStatus("Encrypted file loaded.");
+    };
+    reader.readAsDataURL(f);
+  };
+
+  // --- Decrypt uploaded file (for guest or user "upload" mode) ---
+  const handleDecryptUploaded = async (e) => {
+    e.preventDefault();
+    setStatus("");
+    setFileMeta(null);
+    if (!uploadedEncrypted || !key || !iv) {
+      setStatus("Encrypted file, key, and IV required.");
+      return;
+    }
+    setStatus("Decrypting...");
+    try {
+      const decrypted = await decryptData(uploadedEncrypted, key, iv);
+      const blob = new Blob([decrypted], { type: uploadedMeta.type || "application/octet-stream" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = uploadedMeta.filename?.replace(/\.encrypted$/, "") || "decrypted.bin";
+      a.click();
+      window.URL.revokeObjectURL(url);
+      setStatus("Download successful!");
+      setFileMeta({
+        filename: uploadedMeta.filename,
+        size: decrypted.length,
+        type: uploadedMeta.type,
+      });
+    } catch (err) {
+      setStatus("Decryption failed: " + err.message);
     }
   };
 
-  const handleDownload = async (e) => {
+  // --- Decrypt server file ---
+  const handleDownloadAndDecrypt = async (e) => {
     e.preventDefault();
     setStatus("");
     setFileMeta(null);
@@ -99,7 +159,7 @@ function DownloadFile() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = res.data.filename;
+      a.download = res.data.filename.replace(/\.encrypted$/, "");
       a.click();
       window.URL.revokeObjectURL(url);
       setStatus("Download successful!");
@@ -113,82 +173,174 @@ function DownloadFile() {
     }
   };
 
+  // --- Load key from vault ---
+  const handleLoadKey = async () => {
+    if (!selectedFileId || !passphrase) return;
+    setStatus("Loading key from browser...");
+    const bundle = await loadFileKey(selectedFileId, passphrase);
+    if (bundle && bundle.key && bundle.iv) {
+      setKey(bundle.key);
+      setIV(bundle.iv);
+      setStatus("Key loaded!");
+      setNeedsPassphrase(false);
+    } else {
+      setStatus("Failed to load key: wrong passphrase or not saved.");
+    }
+  };
+
+  // --- UI ---
   return (
     <div className="max-w-lg mx-auto py-10">
-      <h2 className="text-2xl font-bold text-blue-400 mb-6 text-center">Download & Decrypt File</h2>
-      <form
-        className="bg-gray-900 rounded-lg shadow p-8 flex flex-col gap-4"
-        onSubmit={handleDownload}
-      >
-        <label className="text-gray-300">Your Files</label>
-        <select
-          value={selectedFileId}
-          onChange={e => setSelectedFileId(e.target.value)}
-          className="bg-gray-800 text-gray-200 rounded p-2"
-        >
-          <option value="">Select file...</option>
-          {files.map(f => (
-            <option value={f._id} key={f._id}>{f.filename} ({f.metadata?.size} bytes)</option>
-          ))}
-        </select>
+      <h2 className="text-2xl font-bold text-blue-400 mb-6 text-center">Decrypt File</h2>
 
-        {needsPassphrase && (
-          <div className="flex flex-col gap-2">
-            <label className="text-gray-300">Load Key from Browser (enter vault passphrase):</label>
-            <input
-              type="password"
-              value={passphrase}
-              onChange={e => setPassphrase(e.target.value)}
-              className="bg-gray-700 text-gray-200 rounded p-2"
-              placeholder="Vault passphrase"
-            />
+      <div className="flex gap-4 mb-4 justify-center">
+        {isGuest ? (
+          <span className="text-sm text-gray-300">Guest mode: upload encrypted file</span>
+        ) : (
+          <>
             <button
+              className={`px-4 py-2 rounded ${fileUploadMode === "select" ? "bg-blue-700 text-white" : "bg-gray-700 text-gray-200"}`}
+              onClick={() => setFileUploadMode("select")}
               type="button"
-              className="bg-green-600 hover:bg-green-700 text-white rounded py-1"
-              disabled={!passphrase}
-              onClick={handleLoadKey}
             >
-              Load Key
+              Decrypt My File
             </button>
-          </div>
+            <button
+              className={`px-4 py-2 rounded ${fileUploadMode === "upload" ? "bg-blue-700 text-white" : "bg-gray-700 text-gray-200"}`}
+              onClick={() => setFileUploadMode("upload")}
+              type="button"
+            >
+              Decrypt Uploaded File
+            </button>
+          </>
         )}
+      </div>
 
-        <label className="text-gray-300">Key (Base64)</label>
-        <input
-          type="text"
-          value={key}
-          onChange={e => setKey(e.target.value)}
-          className="text-gray-200 bg-gray-800 rounded p-2"
-          placeholder="Paste Key"
-        />
-        <label className="text-gray-300">IV (Base64)</label>
-        <input
-          type="text"
-          value={iv}
-          onChange={e => setIV(e.target.value)}
-          className="text-gray-200 bg-gray-800 rounded p-2"
-          placeholder="Paste IV"
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-semibold transition disabled:opacity-60"
+      {/* Upload Mode (guests always see this, logged-in can choose) */}
+      {(isGuest || fileUploadMode === "upload") && (
+        <form
+          className="bg-gray-900 rounded-lg shadow p-8 flex flex-col gap-4"
+          onSubmit={handleDecryptUploaded}
         >
-          Download & Decrypt
-        </button>
-        {status && <div className="text-gray-300 text-center">{status}</div>}
-        {fileMeta && (
-          <div className="bg-gray-800 text-blue-300 p-3 mt-4 rounded text-sm break-all">
-            <div>File: <b>{fileMeta.filename}</b></div>
-            <div>Type: {fileMeta.type}</div>
-            <div>Size: {fileMeta.size} bytes</div>
-          </div>
-        )}
-      </form>
+          <label className="text-gray-300">Upload Encrypted File</label>
+          <input
+            type="file"
+            accept="*"
+            onChange={handleEncryptedUpload}
+            className="text-gray-200 bg-gray-800 rounded p-2"
+            ref={uploadedFileRef}
+          />
+          <label className="text-gray-300">Key (Base64)</label>
+          <input
+            type="text"
+            value={key}
+            onChange={e => setKey(e.target.value)}
+            className="text-gray-200 bg-gray-800 rounded p-2"
+            placeholder="Paste Key"
+          />
+          <label className="text-gray-300">IV (Base64)</label>
+          <input
+            type="text"
+            value={iv}
+            onChange={e => setIV(e.target.value)}
+            className="text-gray-200 bg-gray-800 rounded p-2"
+            placeholder="Paste IV"
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-semibold transition disabled:opacity-60"
+          >
+            Decrypt & Download
+          </button>
+          {status && <div className="text-gray-300 text-center">{status}</div>}
+          {fileMeta && (
+            <div className="bg-gray-800 text-blue-300 p-3 mt-4 rounded text-sm break-all">
+              <div>File: <b>{fileMeta.filename}</b></div>
+              <div>Type: {fileMeta.type}</div>
+              <div>Size: {fileMeta.size} bytes</div>
+            </div>
+          )}
+        </form>
+      )}
+
+      {/* My Files Mode (only for logged-in users) */}
+      {!isGuest && fileUploadMode === "select" && (
+        <form
+          className="bg-gray-900 rounded-lg shadow p-8 flex flex-col gap-4"
+          onSubmit={handleDownloadAndDecrypt}
+        >
+          <label className="text-gray-300">Your Files</label>
+          <select
+            value={selectedFileId}
+            onChange={e => setSelectedFileId(e.target.value)}
+            className="bg-gray-800 text-gray-200 rounded p-2"
+          >
+            <option value="">Select file...</option>
+            {files.map(f => (
+              <option value={f._id} key={f._id}>{f.filename}</option>
+            ))}
+          </select>
+
+          {needsPassphrase && (
+            <div className="flex flex-col gap-2">
+              <label className="text-gray-300">Load Key from Browser (enter vault passphrase):</label>
+              <input
+                type="password"
+                value={passphrase}
+                onChange={e => setPassphrase(e.target.value)}
+                className="bg-gray-700 text-gray-200 rounded p-2"
+                placeholder="Vault passphrase"
+              />
+              <button
+                type="button"
+                className="bg-green-600 hover:bg-green-700 text-white rounded py-1"
+                disabled={!passphrase}
+                onClick={handleLoadKey}
+              >
+                Load Key
+              </button>
+            </div>
+          )}
+
+          <label className="text-gray-300">Key (Base64)</label>
+          <input
+            type="text"
+            value={key}
+            onChange={e => setKey(e.target.value)}
+            className="text-gray-200 bg-gray-800 rounded p-2"
+            placeholder="Paste Key"
+          />
+          <label className="text-gray-300">IV (Base64)</label>
+          <input
+            type="text"
+            value={iv}
+            onChange={e => setIV(e.target.value)}
+            className="text-gray-200 bg-gray-800 rounded p-2"
+            placeholder="Paste IV"
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-600 text-white py-2 rounded font-semibold transition disabled:opacity-60"
+          >
+            Download & Decrypt
+          </button>
+          {status && <div className="text-gray-300 text-center">{status}</div>}
+          {fileMeta && (
+            <div className="bg-gray-800 text-blue-300 p-3 mt-4 rounded text-sm break-all">
+              <div>File: <b>{fileMeta.filename}</b></div>
+              <div>Type: {fileMeta.type}</div>
+              <div>Size: {fileMeta.size} bytes</div>
+            </div>
+          )}
+        </form>
+      )}
       <div className="mt-6 text-gray-400 text-xs">
-        <p>You can load your key from browser vault (if saved), or paste manually.</p>
+        <p>
+          {isGuest
+            ? "As a guest, upload your encrypted file and provide its Key/IV to decrypt locally."
+            : "You can decrypt your files or any uploaded encrypted file (with the correct key/IV)."}
+        </p>
       </div>
     </div>
   );
 }
-
-export default DownloadFile;

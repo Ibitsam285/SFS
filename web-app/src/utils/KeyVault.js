@@ -83,3 +83,33 @@ export function listVaultedFileIds() {
     .filter(k => k.startsWith(VAULT_PREFIX))
     .map(k => k.slice(VAULT_PREFIX.length));
 }
+
+export function getAllKeys() {
+  const result = {};
+  for (const key in localStorage) {
+    if (key.startsWith(VAULT_PREFIX)) {
+      const fileId = key.slice(VAULT_PREFIX.length);
+      try {
+        result[fileId] = JSON.parse(localStorage.getItem(key));
+      } catch {
+        // Ignore invalid entries
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Import keys from an object (as exported by getAllKeys).
+ * Overwrites any existing keys with the same fileId.
+ * @param {object} obj - { [fileId]: { iv, data } }
+ */
+export function importKeys(obj) {
+  if (typeof obj !== "object" || obj === null) return;
+  for (const fileId in obj) {
+    const record = obj[fileId];
+    if (record && typeof record.iv === "string" && typeof record.data === "string") {
+      localStorage.setItem(VAULT_PREFIX + fileId, JSON.stringify(record));
+    }
+  }
+}

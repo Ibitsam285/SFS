@@ -5,16 +5,17 @@ import { BellIcon, Cog6ToothIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/
 
 const menuOptions = {
   guest: [
-    { label: "Sign in", to: "/signin" },
     { label: "Sign up", to: "/signup" },
-    { label: "Download/Decrypt File", to: "/download" },
+    { label: "Sign in", to: "/signin" },
+    { label: "Download/Decrypt File", to: "/decrypt" },
   ],
   user: [
+    { label: "Manage Files", to: "/files" },
     { label: "Encrypt File", to: "/encrypt" },
-    { label: "Set Access", to: "/access" },
-    { label: "Download/Decrypt File", to: "/download" },
+    { label: "Download/Decrypt File", to: "/decrypt" },
     { label: "Share File", to: "/share" },
     { label: "Group Sharing", to: "/groups" },
+    { label: "Import/Export Keys", to: "/keys" },
   ],
 };
 

@@ -58,12 +58,13 @@ function SignIn() {
           <input
             {...register("password", { required: true })}
             type={showPassword ? "text" : "password"}
+            placeholder="Enter password"
             className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 focus:border-blue-400 outline-none pr-10"
           />
           <button
             type="button"
             tabIndex={-1}
-            className="absolute right-2 top-8 text-gray-400 hover:text-blue-400"
+            className="absolute right-2 top-10 text-gray-400 hover:text-blue-400"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >

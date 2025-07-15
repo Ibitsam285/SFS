@@ -28,12 +28,8 @@ function SignUp() {
     }
     try {
       const res = await signup(payload);
-      // Optionally, automatically sign in after signup:
       if (res && res.message === "Sign up successful!") {
-        // Try to sign in
         await signin(payload);
-        // Fetch user role (from context)
-        // Redirect based on role (default user to /user)
         navigate("/user");
       }
     } catch (err) {
@@ -66,12 +62,13 @@ function SignUp() {
           <input
             {...register("password", { required: true, minLength: 6 })}
             type={showPassword ? "text" : "password"}
+            placeholder="Enter password"
             className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 focus:border-blue-400 outline-none pr-10"
           />
           <button
             type="button"
             tabIndex={-1}
-            className="absolute right-2 top-8 text-gray-400 hover:text-blue-400"
+            className="absolute right-2 top-10 text-gray-400 hover:text-blue-400"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
