@@ -13,8 +13,7 @@ const menuOptions = {
     { label: "Manage Files", to: "/files" },
     { label: "Encrypt File", to: "/encrypt" },
     { label: "Download/Decrypt File", to: "/decrypt" },
-    { label: "Share File", to: "/share" },
-    { label: "Group Sharing", to: "/groups" },
+    { label: "Manage Groups", to: "/groups" },
     { label: "Import/Export Keys", to: "/keys" },
   ],
 };

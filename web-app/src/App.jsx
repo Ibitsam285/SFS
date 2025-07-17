@@ -10,9 +10,8 @@ import EncryptFile from "./pages/EncryptFile";
 import DecryptFile from "./pages/DecryptFile";
 import ManageFiles from "./pages/ManageFiles"
 import KeyVaultManager from "./components/KeyVaultManager";
+import ManageGroups from "./pages/ManageGroups";
 
-function ShareFile() { return <div className="text-gray-100 pt-10 text-center">Share File Page Coming Soon</div>; }
-function GroupSharing() { return <div className="text-gray-100 pt-10 text-center">Group Sharing Page Coming Soon</div>; }
 function Notifications() { return <div className="text-gray-100 pt-10 text-center">Notifications Page Coming Soon</div>; }
 function Settings() { return <div className="text-gray-100 pt-10 text-center">Settings Page Coming Soon</div>; }
 
@@ -55,14 +54,9 @@ function App() {
                   <ManageFiles />
                 </PrivateRoute>
               } />
-              <Route path="/share" element={
-                <PrivateRoute>
-                  <ShareFile />
-                </PrivateRoute>
-              } />
               <Route path="/groups" element={
                 <PrivateRoute>
-                  <GroupSharing />
+                  <ManageGroups />
                 </PrivateRoute>
               } />
               <Route path="/notifications" element={

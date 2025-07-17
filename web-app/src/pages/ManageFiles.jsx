@@ -53,10 +53,10 @@ function ManageFiles() {
             <tbody>
               {files.map(file => (
                 <tr key={file._id} className="border-t border-gray-700">
-                  <td className="p-3">{file.filename}</td>
-                  <td className="p-3">{file.metadata?.size} bytes</td>
-                  <td className="p-3">{file.metadata?.uploadDate ? new Date(file.metadata.uploadDate).toLocaleString() : "—"}</td>
-                  <td className="p-3">
+                  <td className="p-3 pl-10">{file.filename}</td>
+                  <td className="p-3 pl-10">{file.metadata?.size} bytes</td>
+                  <td className="p-3 pl-10">{file.metadata?.uploadDate ? new Date(file.metadata.uploadDate).toLocaleString() : "—"}</td>
+                  <td className="p-3 pl-10">
                     <button
                       className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2"
                       onClick={() => setAccessFile(file)}
@@ -65,7 +65,7 @@ function ManageFiles() {
                       <Cog6ToothIcon className="w-5 h-5" />
                     </button>
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 pl-10">
                     <button
                       className="bg-red-600 hover:bg-red-700 text-white rounded p-2"
                       onClick={() => handleDelete(file._id)}
