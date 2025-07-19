@@ -1,7 +1,44 @@
 const File = require("../models/file");
 const User = require("../models/user");
+const Group = require("../models/group");
 const { logAction } = require("../utils/auditLogger");
 const { sendNotification } = require("../utils/notificationService");
+
+async function listFiles(req, res) {
+  if (req.query.group) {
+    const groupId = req.query.group;
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    const isMember = group.members.some(id => id.equals(req.user._id));
+    if (!isMember && req.user.role !== "admin")
+      return res.status(403).json({ error: "Forbidden" });
+
+    const files = await File.find({ recipientGroups: groupId });
+    await logAction({
+      actorId: req.user._id,
+      action: "LIST_GROUP_FILES",
+      targetType: "Group",
+      targetId: groupId
+    });
+    return res.json(files);
+  }
+
+  const owned = await File.find({ ownerId: req.user._id });
+  const shared = await File.find({ recipients: req.user._id });
+  const groups = req.user.groups || [];
+  const groupFiles = await File.find({ recipientGroups: { $in: groups } });
+  const all = [...owned, ...shared, ...groupFiles]
+    .filter((v, i, a) => a.findIndex(t => t._id.equals(v._id)) === i);
+
+  await logAction({
+    actorId: req.user._id,
+    action: "LIST_FILES",
+    targetType: "User",
+    targetId: req.user._id
+  });
+
+  res.json(all);
+}
 
 async function listAllFiles(req, res) {
   const files = await File.find();
@@ -29,24 +66,6 @@ async function uploadFile(req, res) {
   });
 
   res.status(201).json(file);
-}
-
-async function listFiles(req, res) {
-  const owned = await File.find({ ownerId: req.user._id });
-  const shared = await File.find({ recipients: req.user._id });
-  const groups = req.user.groups || [];
-  const groupFiles = await File.find({ recipientGroups: { $in: groups } });
-  const all = [...owned, ...shared, ...groupFiles]
-    .filter((v, i, a) => a.findIndex(t => t._id.equals(v._id)) === i);
-
-  await logAction({
-    actorId: req.user._id,
-    action: "LIST_FILES",
-    targetType: "User",
-    targetId: req.user._id
-  });
-
-  res.json(all);
 }
 
 async function getFile(req, res) {
@@ -158,13 +177,13 @@ async function shareFile(req, res) {
   });
 
   for (const recipientId of newUserRecipients) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId,
       type: "FILE_SHARED",
       content: `A file "${file.filename}" was shared with you.`
     });
+    req.app.get("io").to(recipientId.toString()).emit("notification", notification);
   }
-
 
   res.json(file);
 }
@@ -200,11 +219,12 @@ async function revokeFile(req, res) {
   });
 
   for (const revokedId of revokedUserIds) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId: revokedId,
       type: "FILE_REVOKED",
       content: `Your access to file "${file.filename}" was revoked.`
     });
+    req.app.get("io").to(revokedId.toString()).emit("notification", notification);
   }
 
   res.json(file);

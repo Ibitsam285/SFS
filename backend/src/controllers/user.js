@@ -10,7 +10,6 @@ async function getMe(req, res) {
 }
 
 async function getUserById(req, res) {
-
   const user = await User.findById(req.params.id).select("-password");
   if (!user) return res.status(404).json({ error: "User not found" });
   res.json(user);
@@ -59,7 +58,7 @@ async function updateUser(req, res) {
   });
 
   console.log("Audit log created:", log);
-  
+
   res.json({ message: "User updated successfully", user });
 }
 
@@ -101,11 +100,15 @@ async function changeUserRole(req, res) {
     targetId: req.params.id
   });
 
-  await sendNotification({
+  // Save notification to DB
+  const notification = await sendNotification({
     recipientId: req.params.id,
     type: "ROLE_CHANGED",
     content: `Your role was changed to ${req.body.role} by admin.`
   });
+
+  // Emit via Socket.IO
+  req.app.get("io").to(req.params.id.toString()).emit("notification", notification);
 
   res.json({ message: "Role updated", user });
 }

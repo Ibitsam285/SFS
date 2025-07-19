@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { restrict, restrictRole } = require("../middlewares/auth");
 const {
-  getFileLogs,
   getOwnLogs,
   getAllLogs
 } = require("../controllers/auditLog");

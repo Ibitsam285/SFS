@@ -9,8 +9,23 @@ async function listAllGroups(req, res) {
 }
 
 async function listGroups(req, res) {
-  const groups = await Group.find({ members: req.user._id });
-  res.json(groups);
+  const searchTerm = req.query.search;
+
+  const query = {
+    members: req.user._id,
+  };
+
+  if (searchTerm) {
+    query.name = { $regex: searchTerm, $options: "i" };
+  }
+
+  try {
+    const groups = await Group.find(query);
+    res.json(groups);
+  } catch (err) {
+    console.error("Error listing groups:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 }
 
 async function createGroup(req, res) {
@@ -31,11 +46,12 @@ async function createGroup(req, res) {
 
   const notifyIds = uniqueMembers.filter(id => id.toString() !== req.user._id.toString());
   for (const memberId of notifyIds) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId: memberId,
       type: "GROUP_ADDED",
       content: `You were added to group "${name}".`
     });
+    req.app.get("io").to(memberId.toString()).emit("notification", notification);
   }
 
   res.status(201).json(group);
@@ -89,11 +105,12 @@ async function deleteGroup(req, res) {
 
   const notifyIds = group.members.filter(id => id.toString() !== req.user._id.toString());
   for (const memberId of notifyIds) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId: memberId,
       type: "GROUP_REMOVED",
       content: `Group "${group.name}" was deleted.`
     });
+    req.app.get("io").to(memberId.toString()).emit("notification", notification);
   }
 
   res.json({ message: "Group deleted" });
@@ -117,11 +134,12 @@ async function addMembers(req, res) {
   });
 
   for (const memberId of userIds) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId: memberId,
       type: "GROUP_ADDED",
       content: `You were added to group "${group.name}".`
     });
+    req.app.get("io").to(memberId.toString()).emit("notification", notification);
   }
 
   res.json(group);
@@ -147,11 +165,12 @@ async function removeMembers(req, res) {
   });
 
   for (const memberId of userIds) {
-    await sendNotification({
+    const notification = await sendNotification({
       recipientId: memberId,
       type: "GROUP_REMOVED",
       content: `You were removed from group "${group.name}".`
     });
+    req.app.get("io").to(memberId.toString()).emit("notification", notification);
   }
 
   res.json(group);

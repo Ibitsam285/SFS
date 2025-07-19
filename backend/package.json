@@ -1,13 +1,13 @@
 {
-  "name": "secure-file-sharing-app",
-  "version": "1.0.0",
+  "name": "secure-file-sharing-app-server",
+  "version": "0.1.0",
   "main": "app.js",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "author": "",
   "license": "ISC",
@@ -25,6 +25,7 @@
     "mongoose": "^8.16.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.1",
+    "socket.io": "^4.8.1",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
