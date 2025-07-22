@@ -14,8 +14,7 @@ import ManageGroups from "./pages/ManageGroups";
 import NotificationDropdown from "./components/Notification";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import PublicRoute from "./routes/PublicRoute";
-
-function Settings() { return <div className="text-gray-100 pt-10 text-center">Settings Page Coming Soon</div>; }
+import SettingsPage from "./pages/SettingsPage";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -77,7 +76,7 @@ function App() {
                 } />
                 <Route path="/settings" element={
                   <PrivateRoute>
-                    <Settings />
+                    <SettingsPage />
                   </PrivateRoute>
                 } />
                 <Route path="/keys" element={

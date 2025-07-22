@@ -70,7 +70,7 @@ function Navbar({ options }) {
               {/* Notification Bell */}
               <div className="relative" ref={dropdownRef}>
                 <button
-                  className="relative text-gray-300 hover:text-blue-400 transition"
+                  className="relative text-gray-300 hover:text-blue-400 transition mt-2"
                   onClick={() => setShowDropdown(v => !v)}
                   aria-label="Notifications"
                 >
