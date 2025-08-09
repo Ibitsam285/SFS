@@ -27,7 +27,7 @@ function SignIn() {
     }
     try {
       await signin(payload);
-      navigate("/user");
+      navigate("/");
     } catch (err) {
       setError(
         err.response?.data?.error ||

@@ -37,15 +37,13 @@ async function decryptData(encryptedBase64, base64Key, base64IV) {
   return new Uint8Array(decrypted);
 }
 
-// --- Main Component ---
 export default function DecryptFile() {
   const { user } = useAuth();
   const isGuest = !user;
 
-  // For logged-in users: allow select or upload
   const [files, setFiles] = useState([]);
   const [selectedFileId, setSelectedFileId] = useState("");
-  const [fileUploadMode, setFileUploadMode] = useState(isGuest ? "upload" : "select"); // "select" or "upload"
+  const [fileUploadMode, setFileUploadMode] = useState(isGuest ? "upload" : "select"); 
   const [uploadedEncrypted, setUploadedEncrypted] = useState(null);
   const [uploadedMeta, setUploadedMeta] = useState({});
   const [key, setKey] = useState("");
@@ -75,7 +73,6 @@ export default function DecryptFile() {
     }
   }, [fileUploadMode, selectedFileId]);
 
-  // --- Handle Upload of Encrypted File ---
   const handleEncryptedUpload = (e) => {
     const f = e.target.files[0];
     if (!f) {
@@ -102,7 +99,6 @@ export default function DecryptFile() {
     reader.readAsDataURL(f);
   };
 
-  // --- Decrypt uploaded file (for guest or user "upload" mode) ---
   const handleDecryptUploaded = async (e) => {
     e.preventDefault();
     setStatus("");

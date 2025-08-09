@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../utils/api";
 import Cookies from "js-cookie";
+import { Navigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
@@ -37,6 +38,7 @@ export function AuthProvider({ children }) {
     await api.post("/auth/signOut");
     setUser(null);
     Cookies.remove("uid");
+    Navigate("/", { replace: true });
   };
 
   return (

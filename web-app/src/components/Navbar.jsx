@@ -24,12 +24,10 @@ function Navbar({ options }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // --- Notifications
   const { unread, notifications, markAsRead, markAllAsRead } = useNotifications();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef();
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -114,7 +112,6 @@ function Navbar({ options }) {
                   </div>
                 )}
               </div>
-              {/* /Notification Bell */}
 
               <Link to="/settings" className="ml-2 text-gray-300 hover:text-blue-400 transition">
                 <Cog6ToothIcon className="w-6 h-6" />
@@ -166,7 +163,6 @@ function Navbar({ options }) {
                     </span>
                   )}
                 </button>
-                {/* (Notifications dropdown for mobile could be rendered here, or reuse above logic) */}
                 <Link to="/settings" className="flex items-center gap-2 text-gray-300 hover:text-blue-400 transition py-1">
                   <Cog6ToothIcon className="w-6 h-6" /> Settings
                 </Link>
