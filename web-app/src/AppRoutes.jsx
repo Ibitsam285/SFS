@@ -18,6 +18,7 @@ import PublicRoute from "./routes/PublicRoute";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import AdminManageUsers from "./pages/AdminManageUsers";
+import AdminManageGroups from "./pages/AdminManageGroups";
 
 function PrivateRoute({ children, adminOnly, userOnly }) {
   const { user, loading } = useAuth();
@@ -97,7 +98,7 @@ export default function AppRoutes() {
             } />
             <Route path="/manage-groups" element={
               <PrivateRoute adminOnly>
-                <div>Admin: Manage Groups</div>
+                 <AdminManageGroups />
               </PrivateRoute>
             } />
             <Route path="/manage-files" element={
