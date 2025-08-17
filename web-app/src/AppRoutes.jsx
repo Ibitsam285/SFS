@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 import AdminManageUsers from "./pages/AdminManageUsers";
 import AdminManageGroups from "./pages/AdminManageGroups";
+import AdminManageFiles from "./pages/AdminManageFiles";
 
 function PrivateRoute({ children, adminOnly, userOnly }) {
   const { user, loading } = useAuth();
@@ -103,7 +104,7 @@ export default function AppRoutes() {
             } />
             <Route path="/manage-files" element={
               <PrivateRoute adminOnly>
-                <div>Admin: Manage Files</div>
+                <AdminManageFiles />
               </PrivateRoute>
             } />
             <Route path="/manage-logs" element={
