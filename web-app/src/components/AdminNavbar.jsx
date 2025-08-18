@@ -16,7 +16,7 @@ const adminLinks = [
   { label: "Manage Groups", to: "/manage-groups", icon: <UserGroupIcon className="w-5 h-5" /> },
   { label: "Manage Files", to: "/manage-files", icon: <FolderIcon className="w-5 h-5" /> },
   { label: "Manage Logs", to: "/manage-logs", icon: <DocumentTextIcon className="w-5 h-5" /> },
-  { label: "Settings", to: "/settings", icon: <Cog6ToothIcon className="w-5 h-5" /> },
+  { label: "Settings", to: "/admin-settings", icon: <Cog6ToothIcon className="w-5 h-5" /> },
 ];
 
 export default function AdminNavbar() {
