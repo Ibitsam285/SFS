@@ -3,7 +3,6 @@ import api from "../utils/api";
 import { loadFileKey } from "../utils/KeyVault";
 import { useAuth } from "../context/AuthContext";
 
-// --- Crypto helpers ---
 function base64ToArrayBuffer(base64) {
   const binaryString = atob(base64);
   const len = binaryString.length;
@@ -128,7 +127,6 @@ export default function DecryptFile() {
     }
   };
 
-  // --- Decrypt server file ---
   const handleDownloadAndDecrypt = async (e) => {
     e.preventDefault();
     setStatus("");
@@ -212,7 +210,6 @@ export default function DecryptFile() {
         )}
       </div>
 
-      {/* Upload Mode (guests always see this, logged-in can choose) */}
       {(isGuest || fileUploadMode === "upload") && (
         <form
           className="bg-gray-900 rounded-lg shadow p-8 flex flex-col gap-4"
@@ -259,7 +256,6 @@ export default function DecryptFile() {
         </form>
       )}
 
-      {/* My Files Mode (only for logged-in users) */}
       {!isGuest && fileUploadMode === "select" && (
         <form
           className="bg-gray-900 rounded-lg shadow p-8 flex flex-col gap-4"

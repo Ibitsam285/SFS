@@ -62,19 +62,20 @@ function ManageGroups() {
     };
 
     const handleRename = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await api.patch(`/groups/${selectedGroup._id}`, { name: editingName });
-            setSelectedGroup(res.data);
-            setGroups(gs =>
-                gs.map(g => g._id === res.data._id ? { ...g, name: res.data.name } : g)
-            );
-            setEditMode(false);
-            setStatus("Renamed!");
-        } catch (err) {
-            setStatus("Rename failed: " + (err.response?.data?.error || err.message));
-        }
-    };
+    e.preventDefault();
+    try {
+        await api.patch(`/groups/${selectedGroup._id}`, { name: editingName });
+        const res = await api.get(`/groups/${selectedGroup._id}`);
+        setSelectedGroup(res.data);
+        setGroups(gs =>
+            gs.map(g => g._id === res.data._id ? { ...g, name: res.data.name } : g)
+        );
+        setEditMode(false);
+        setStatus("Renamed!");
+    } catch (err) {
+        setStatus("Rename failed: " + (err.response?.data?.error || err.message));
+    }
+};
 
     const handleDelete = async () => {
         if (!window.confirm("Delete this group?")) return;
@@ -139,9 +140,9 @@ function ManageGroups() {
     return (
         <div className="max-w-5xl mx-auto py-8">
             <h2 className="text-2xl font-bold text-blue-400 mb-6 text-center">Manage Groups</h2>
-            <div className="flex flex-wrap gap-8">
+            <div className="flex flex-wrap gap-8 ">
                 {/* Group List */}
-                <div className="w-64 bg-gray-900 rounded-lg p-4 shadow">
+                <div className="w-68 bg-gray-900 rounded-lg p-4 shadow">
                     <div className="mb-4">
                         <form onSubmit={handleCreateGroup} className="flex gap-2">
                             <input
@@ -161,7 +162,7 @@ function ManageGroups() {
                         </form>
                         {createStatus && <div className="text-green-400 text-xs">{createStatus}</div>}
                     </div>
-                    <div className="font-semibold text-gray-300 mb-2">Your Groups</div>
+                    <div className="font-semibold text-gray-300 mb-2 pl-1">Your Groups</div>
                     <ul>
                         {groups.map(g => (
                             <li
@@ -212,7 +213,7 @@ function ManageGroups() {
                                 <div className="font-semibold text-gray-300 mb-1">Members:</div>
                                 <ul>
                                     {selectedGroup.members.map(m => (
-                                        <li key={m._id} className="flex items-center gap-2">
+                                        <li key={m._id} className="flex items-center gap-2 pb-2">
                                             <span className="font-semibold text-amber-100"> {m.username ? m.username : m.email} </span>
                                             {(selectedGroup.owner._id === user._id || user.role === "admin") && m._id !== selectedGroup.owner._id && (
                                                 <button

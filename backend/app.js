@@ -7,7 +7,6 @@ const http = require("http");
 const socketio = require("socket.io");
 const connectDB = require("./src/config/db");
 
-// Route imports
 const authRouter = require("./src/routes/auth");
 const userRouter = require("./src/routes/user");
 const groupRouter = require("./src/routes/group");
@@ -20,9 +19,10 @@ dotenv.config();
 const app = express();
 connectDB();
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -30,7 +30,6 @@ app.use(
   })
 );
 
-// Rewrite non-prefixed API routes to include /api
 app.use((req, res, next) => {
   const originalUrl = req.url;
   if (
@@ -47,7 +46,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Register API routes
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/groups", groupRouter);

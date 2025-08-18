@@ -9,7 +9,6 @@ async function isFieldTaken(field, value) {
 
 async function signUp(req, res) {
   const { username, email, password, role } = req.body
-  console.log(req.body)
   if (!password)
     return res.status(400).json({ error: "Password is required" })
   if (!username && !email)

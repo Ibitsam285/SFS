@@ -57,8 +57,6 @@ async function updateUser(req, res) {
     targetId: req.params.id
   });
 
-  console.log("Audit log created:", log);
-
   res.json({ message: "User updated successfully", user });
 }
 

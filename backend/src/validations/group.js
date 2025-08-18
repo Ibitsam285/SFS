@@ -2,6 +2,7 @@ const Joi = require("joi");
 
 const createGroupSchema = Joi.object({
   name: Joi.string().min(3).max(40).required(),
+  owner: Joi.string().hex().length(24).optional(),
   members: Joi.array().items(Joi.string().hex().length(24)).optional(),
 });
 

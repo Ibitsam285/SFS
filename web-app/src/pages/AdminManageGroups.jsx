@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import ErrorModal from "../components/ErrorModal";
 
 function ConfirmModal({ show, onClose, onConfirm, title, message }) {
   if (!show) return null;
@@ -23,29 +24,25 @@ function GroupModal({ mode, group, users, onClose, onSave }) {
     owner: group?.owner || (users.length ? users[0]._id : ""),
     members: [],
   });
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const initialOwner = group?.owner || (users.length ? users[0]._id : "");
-    const initialMembers = group?.members
-      ? [...group.members.map(String)]
-      : users.filter(u => u._id !== initialOwner).map(u => u._id.toString());
-
     setForm({
       name: group?.name || "",
       owner: initialOwner,
-      members: initialMembers,
+      members: [initialOwner],
     });
   }, [group, users]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(f => {
-      // If owner changes, remove them from members if already included
       if (name === "owner") {
         return {
           ...f,
           owner: value,
-          members: f.members.filter(m => m !== value),
+          members: [value],
         };
       }
       return { ...f, [name]: value };
@@ -53,85 +50,91 @@ function GroupModal({ mode, group, users, onClose, onSave }) {
   };
 
   const handleMemberToggle = (id) => {
-    setForm(f => ({
-      ...f,
-      members: f.members.includes(id)
-        ? f.members.filter(m => m !== id)
-        : [...f.members, id],
-    }));
-  };
-
-  const isSubmitDisabled = () => {
-    const hasMembers = form.members.length > 0;
-    const ownerIncluded = form.members.includes(form.owner);
-    return !hasMembers && !ownerIncluded;
+    setForm(f => {
+      let members;
+      if (f.members.includes(id)) {
+        // Don't allow removing the admin/owner
+        if (id === f.owner) return f;
+        members = f.members.filter(m => m !== id);
+      } else {
+        members = [...f.members, id];
+      }
+      return { ...f, members };
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isSubmitDisabled()) return;
+    if (form.members.length === 0) {
+      setError("Please select at least one member.");
+      return;
+    }
+    setError("");
     onSave(form);
   };
 
   return (
-    <div className="fixed z-50 inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md border border-gray-700 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-semibold text-gray-200 mb-4">{mode === "edit" ? "Edit Group" : "Create Group"}</h2>
+    <>
+      <ErrorModal message={error} onClose={() => setError("")} />
+      <div className="fixed z-50 inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4">
+        <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md border border-gray-700 max-h-[90vh] overflow-y-auto">
+          <h2 className="text-xl font-semibold text-gray-200 mb-4">{mode === "edit" ? "Edit Group" : "Create Group"}</h2>
 
-        <label className="block text-gray-400 mb-1">Group Name</label>
-        <input
-          className="w-full mb-3 px-3 py-2 rounded bg-gray-900 text-gray-200 border border-gray-700 focus:border-blue-400 outline-none"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
+          <label className="block text-gray-400 mb-1">Group Name</label>
+          <input
+            className="w-full mb-3 px-3 py-2 rounded bg-gray-900 text-gray-200 border border-gray-700 focus:border-blue-400 outline-none"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            required
+          />
 
-        <label className="block text-gray-400 mb-1">Owner</label>
-        <select
-          name="owner"
-          className="w-full mb-3 px-2 py-1 rounded bg-gray-900 text-gray-200 border border-gray-700"
-          value={form.owner}
-          onChange={handleChange}
-          required
-        >
-          {users.map(u => (
-            <option key={u._id} value={u._id}>
-              {u.username || u.email || "NoName"}
-            </option>
-          ))}
-        </select>
-
-        <label className="block text-gray-400 mb-2">Members</label>
-        <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-700 p-2 rounded bg-gray-900 custom-scrollbar">
-          {users.map(u => (
-            <label key={u._id} className="flex items-center text-gray-300 text-sm gap-2">
-              <input
-                type="checkbox"
-                checked={!form.members.includes(u._id.toString())}
-                onChange={() => handleMemberToggle(u._id.toString())}
-                className="accent-blue-500"
-              />
-              {u.username || u.email || "NoName"}
-              {u._id === form.owner && <span className="ml-auto text-xs text-yellow-400">(Owner)</span>}
-            </label>
-          ))}
-        </div>
-
-        <div className="flex justify-end gap-2 mt-4">
-          <button type="button" onClick={onClose} className="px-4 py-1 rounded bg-gray-700 text-gray-200 hover:bg-gray-600">Cancel</button>
-          <button
-            type="submit"
-            disabled={isSubmitDisabled()}
-            className={`px-4 py-1 rounded font-semibold text-white transition ${
-              isSubmitDisabled() ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+          <label className="block text-gray-400 mb-1">Owner</label>
+          <select
+            name="owner"
+            className="w-full mb-3 px-2 py-1 rounded bg-gray-900 text-gray-200 border border-gray-700"
+            value={form.owner}
+            onChange={handleChange}
+            required
           >
-            {mode === "edit" ? "Update" : "Create"}
-          </button>
-        </div>
-      </form>
-    </div>
+            {users.map(u => (
+              <option key={u._id} value={u._id}>
+                {u.username || u.email || "NoName"}
+              </option>
+            ))}
+          </select>
+
+          <label className="block text-gray-400 mb-2">Members</label>
+          <div className="max-h-48 overflow-y-auto space-y-1 border border-gray-700 p-2 rounded bg-gray-900 custom-scrollbar">
+            {users.map(u => (
+              <label key={u._id} className="flex items-center text-gray-300 text-sm gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.members.includes(u._id.toString())}
+                  onChange={() => handleMemberToggle(u._id.toString())}
+                  className="accent-blue-500"
+                />
+                {u.username || u.email || "NoName"}
+                {u._id === form.owner && <span className="ml-auto text-xs text-yellow-400">(Owner)</span>}
+              </label>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2 mt-4">
+            <button type="button" onClick={onClose} className="px-4 py-1 rounded bg-gray-700 text-gray-200 hover:bg-gray-600">Cancel</button>
+            <button
+              type="submit"
+              className={`px-4 py-1 rounded font-semibold text-white transition ${
+                form.members.length === 0 ? "bg-gray-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              }`}
+              disabled={form.members.length === 0}
+            >
+              {mode === "edit" ? "Update" : "Create"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </>
   );
 }
 
@@ -205,8 +208,8 @@ export default function AdminManageGroups() {
       }
       setShowModal(false);
       setEditingGroup(null);
-    } catch {
-      setError("Could not save group.");
+    } catch (err) {
+      setError(err?.response?.data?.error || "Could not save group.");
     }
   };
 
@@ -215,16 +218,17 @@ export default function AdminManageGroups() {
     try {
       await axios.delete(`/api/groups/${groupId}`);
       setGroups(groups => groups.filter(g => g._id !== groupId));
-    } catch {
-      setError("Could not delete group.");
+    } catch (err) {
+      setError(err?.response?.data?.error || "Could not delete group.");
     }
   };
 
+  // Don't render error on whole page, show error modal instead
   if (loading) return <div className="text-center p-8 text-gray-300">Loading...</div>;
-  if (error) return <div className="text-center text-red-400">{error}</div>;
 
   return (
     <div className="p-6 overflow-x-auto custom-scrollbar">
+      <ErrorModal message={error} onClose={() => setError("")} />
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-gray-200">Manage Groups</h1>
         <button

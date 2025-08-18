@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import ErrorModal from "../components/ErrorModal";
 
 function ConfirmModal({ show, onClose, onConfirm, title, message }) {
   if (!show) return null;
@@ -179,10 +180,10 @@ export default function AdminManageUsers() {
   };
 
   if (loading) return <div className="text-center p-8 text-gray-300">Loading...</div>;
-  if (error) return <div className="text-center text-red-400">{error}</div>;
 
   return (
     <div className="p-6 overflow-x-auto custom-scrollbar">
+      <ErrorModal message={error} onClose={() => setError("")} />
       <h1 className="text-2xl font-bold mb-4 text-gray-200">Manage Users</h1>
       <div className="w-full overflow-x-auto custom-scrollbar">
         <table className="min-w-full bg-gray-800 rounded-lg shadow table-fixed">

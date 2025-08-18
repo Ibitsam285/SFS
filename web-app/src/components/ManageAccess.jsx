@@ -13,7 +13,6 @@ function ManageAccess({ file, onClose }) {
   const accessControl = file.accessControl || {};
 
   const [expiry, setExpiry] = useState(accessControl.expiry ? toInputDateTimeValue(accessControl.expiry) : "");
-  const [maxDownloads, setMaxDownloads] = useState(accessControl.maxDownloads ? String(accessControl.maxDownloads) : "");
   const [revoked, setRevoked] = useState(accessControl.revoked || false);
   const [status, setStatus] = useState("");
 
@@ -106,13 +105,10 @@ function ManageAccess({ file, onClose }) {
     let payload = {};
     if (expiry) {
       payload.expiry = new Date(expiry).toISOString();
-    } else if (maxDownloads) {
-      payload.maxDownloads = parseInt(maxDownloads, 10);
-    }
-    payload.revoked = revoked;
+    } 
 
-    if (!expiry && !maxDownloads && !revoked) {
-      setStatus("Set at least one access control (expiry, max downloads, or revoke).");
+    if (!expiry) {
+      setStatus("Set at least one access control (expiry or revoke).");
       return;
     }
 
@@ -190,11 +186,6 @@ function ManageAccess({ file, onClose }) {
 
   const handleExpiryChange = (val) => {
     setExpiry(val);
-    if (val) setMaxDownloads("");
-  };
-  const handleMaxDownloadsChange = (val) => {
-    setMaxDownloads(val);
-    if (val) setExpiry("");
   };
 
   return (
@@ -207,7 +198,7 @@ function ManageAccess({ file, onClose }) {
           <XMarkIcon className="w-7 h-7" />
         </button>
         <h3 className="text-xl font-bold text-blue-400 mb-4">Manage Access: {file.filename}</h3>
-        {/* Access Controls */}
+        {status && <div className="text-green-300 mt-2">{status}</div>}
         <form className="mb-4 space-y-3" onSubmit={handleUpdateAccess}>
           <div>
             <label className="text-gray-300">Expiry (only one allowed)</label>
@@ -216,33 +207,12 @@ function ManageAccess({ file, onClose }) {
               value={expiry}
               onChange={e => handleExpiryChange(e.target.value)}
               className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 outline-none"
-              disabled={!!maxDownloads}
-            />
-          </div>
-          <div>
-            <label className="text-gray-300">Max Downloads (only one allowed)</label>
-            <input
-              type="number"
-              min="1"
-              value={maxDownloads}
-              onChange={e => handleMaxDownloadsChange(e.target.value)}
-              className="w-full p-2 rounded bg-gray-800 text-gray-100 border border-gray-700 outline-none"
-              disabled={!!expiry}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-gray-300">Revoke All Access</label>
-            <input
-              type="checkbox"
-              checked={revoked}
-              onChange={e => setRevoked(e.target.checked)}
-              className="w-5 h-5"
             />
           </div>
           <button
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded transition w-full"
-          >
+          > 
             Update Access Control
           </button>
         </form>
@@ -315,7 +285,6 @@ function ManageAccess({ file, onClose }) {
           </form>
         )}
 
-        {/* Share to GROUPS */}
         {shareMode === "group" && (
           <form className="mb-4" onSubmit={handleGroupSearch}>
             <label className="text-gray-300">Search group to share:</label>
@@ -389,7 +358,7 @@ function ManageAccess({ file, onClose }) {
                     ))}
                   </ul>
                 </div>
-              )}
+              )}z
               {sharedGroupInfos.length > 0 && (
                 <div>
                   <div className="text-gray-400 mb-1 font-semibold mt-2">Groups:</div>
@@ -411,7 +380,6 @@ function ManageAccess({ file, onClose }) {
             </>
           )}
         </div>
-        {status && <div className="text-gray-300 mt-2">{status}</div>}
       </div>
     </div>
   );

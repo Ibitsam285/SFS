@@ -121,9 +121,13 @@ async function addMembers(req, res) {
   if (!group) return res.status(404).json({ error: "Group not found" });
   if (!group.owner.equals(req.user._id) && req.user.role !== "admin")
     return res.status(403).json({ error: "Forbidden" });
-  const userIds = req.body.userIds.filter(id => !group.members.includes(id));
-  group.members = [...group.members, ...userIds];
+
+  const userIds = (req.body.userIds || []).filter(
+    id => !group.members.some(m => m.equals(id))
+  );
+  group.members.push(...userIds);
   await group.save();
+
   await User.updateMany({ _id: { $in: userIds } }, { $addToSet: { groups: group._id } });
 
   await logAction({

@@ -9,7 +9,6 @@ export default function NotificationDropdown() {
   const [unread, setUnread] = useState(0);
   const dropdownRef = useRef();
 
-  // Fetch notifications on open
   useEffect(() => {
     if (open) {
       setLoading(true);
@@ -22,7 +21,6 @@ export default function NotificationDropdown() {
     }
   }, [open]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClick(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -35,7 +33,6 @@ export default function NotificationDropdown() {
     }
   }, [open]);
 
-  // Mark one notification as read
   const handleMarkRead = async (id) => {
     await api.patch(`/notifications/${id}/read`);
     setNotifications(notifications =>
@@ -44,7 +41,6 @@ export default function NotificationDropdown() {
     setUnread(n => Math.max(0, n - 1));
   };
 
-  // Mark all as read
   const handleMarkAllRead = async () => {
     await api.patch("/notifications/read-all");
     setNotifications(notifications => notifications.map(n => ({ ...n, read: true })));

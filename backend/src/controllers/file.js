@@ -161,12 +161,33 @@ async function shareFile(req, res) {
   if (!file) return res.status(404).json({ error: "File not found" });
   if (!file.ownerId.equals(req.user._id) && req.user.role !== "admin")
     return res.status(403).json({ error: "Forbidden" });
+
   const { userIds = [], groupIds = [] } = req.body;
-  const newUserRecipients = userIds.filter(
-    id => !file.recipients.map(String).includes(id)
+
+  const newUserRecipients = (userIds || []).filter(
+    id => !file.recipients.some(r => r.equals(id))
   );
-  file.recipients = Array.from(new Set([...file.recipients, ...userIds]));
-  file.recipientGroups = Array.from(new Set([...file.recipientGroups, ...groupIds]));
+  file.recipients = [
+    ...file.recipients,
+    ...newUserRecipients
+  ];
+
+  file.recipients = file.recipients.filter(
+    (id, idx, arr) => arr.findIndex(i => i.equals(id)) === idx
+  );
+
+  const newGroupRecipients = (groupIds || []).filter(
+    id => !file.recipientGroups.some(g => g.equals(id))
+  );
+  file.recipientGroups = [
+    ...file.recipientGroups,
+    ...newGroupRecipients
+  ];
+
+  file.recipientGroups = file.recipientGroups.filter(
+    (id, idx, arr) => arr.findIndex(i => i.equals(id)) === idx
+  );
+
   await file.save();
 
   await logAction({
@@ -191,6 +212,7 @@ async function shareFile(req, res) {
 async function revokeFile(req, res) {
   const file = await File.findById(req.params.id);
   if (!file) return res.status(404).json({ error: "File not found" });
+  
   if (!file.ownerId.equals(req.user._id) && req.user.role !== "admin")
     return res.status(403).json({ error: "Forbidden" });
   const { userIds = [], groupIds = [], all = false } = req.body;

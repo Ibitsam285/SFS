@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import ErrorModal from "../components/ErrorModal";
 
 function formatDate(dateString) {
   if (!dateString) return "—";
@@ -71,24 +72,20 @@ export default function AdminManageLogs() {
     fetchData();
   }, []);
 
-  // Prepare logs with actor names for sorting/filtering
   const logsWithActor = logs.map(log => ({
     ...log,
     _actorName: (usersMap[log.actorId] && (usersMap[log.actorId].username || usersMap[log.actorId].email)) || "Unknown"
   }));
 
-  // Unique action types, actors, targets for filters
   const actions = Array.from(new Set(logs.map(l => l.action))).sort();
   const actors = Array.from(new Set(logsWithActor.map(l => l._actorName))).sort();
   const targetTypes = Array.from(new Set(logs.map(l => l.targetType))).sort();
 
-  // Apply filters
   let filteredLogs = logsWithActor;
   if (filterAction) filteredLogs = filteredLogs.filter(l => l.action === filterAction);
   if (filterActor) filteredLogs = filteredLogs.filter(l => l._actorName === filterActor);
   if (filterTargetType) filteredLogs = filteredLogs.filter(l => l.targetType === filterTargetType);
 
-  // Sort
   const sortedLogs = sortLogList(filteredLogs, sortBy, sortOrder);
 
   const handleSort = (field) => {
@@ -101,10 +98,10 @@ export default function AdminManageLogs() {
   };
 
   if (loading) return <div className="text-center p-8 text-gray-300">Loading...</div>;
-  if (error) return <div className="text-center text-red-400">{error}</div>;
 
   return (
     <div className="p-6 overflow-x-auto custom-scrollbar">
+      <ErrorModal message={error} onClose={() => setError("")} />
       <h1 className="text-2xl font-bold mb-4 text-gray-200">Audit Logs</h1>
       <div className="flex flex-wrap gap-4 mb-3 items-center">
         <span className="text-gray-300">Filter:</span>

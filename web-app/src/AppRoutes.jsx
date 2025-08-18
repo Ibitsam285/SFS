@@ -1,36 +1,42 @@
+// External Libraries
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// Context
 import { useAuth } from "./context/AuthContext";
+
+// Layout Components
 import Navbar from "./components/Navbar";
 import AdminNavbar from "./components/AdminNavbar";
 import Footer from "./components/Footer";
+import NotificationDropdown from "./components/Notification";
+import KeyVaultManager from "./components/KeyVaultManager";
+
+// Routes
+import PublicRoute from "./routes/PublicRoute";
+import PrivateRoute from "./routes/PrivateRoute";
+
+// Public Pages
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import NotFound from "./pages/NotFound";
+
+// User Pages
 import UserLanding from "./pages/UserLanding";
-import AdminLanding from "./pages/AdminLanding";
 import EncryptFile from "./pages/EncryptFile";
 import DecryptFile from "./pages/DecryptFile";
 import ManageFiles from "./pages/ManageFiles";
-import KeyVaultManager from "./components/KeyVaultManager";
 import ManageGroups from "./pages/ManageGroups";
-import NotificationDropdown from "./components/Notification";
-import PublicRoute from "./routes/PublicRoute";
 import SettingsPage from "./pages/SettingsPage";
-import NotFound from "./pages/NotFound";
+
+// Admin Pages
+import AdminLanding from "./pages/AdminLanding";
 import AdminManageUsers from "./pages/AdminManageUsers";
 import AdminManageGroups from "./pages/AdminManageGroups";
 import AdminManageFiles from "./pages/AdminManageFiles";
 import AdminManageLogs from "./pages/AdminManageLogs";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 
-function PrivateRoute({ children, adminOnly, userOnly }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/signin" />;
-  if (adminOnly && user.role !== "admin") return <NotFound />;
-  if (userOnly && user.role === "admin") return <NotFound />;
-  return children;
-}
 
 function HomeRoute() {
   const { user, loading } = useAuth();
