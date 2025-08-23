@@ -6,7 +6,6 @@ const {
   uploadFile,
   listFiles,
   getFile,
-  downloadFile,
   deleteFile,
   updateAccess,
   shareFile,
@@ -25,7 +24,6 @@ router.post("/", restrict, validateBody(uploadFileSchema), uploadFile);
 router.get("/", restrict, listFiles);
 router.get("/all", restrict, restrictRole(["admin"]), listAllFiles);
 router.get("/:id", restrict, getFile);
-router.get("/:id/download", restrict, downloadFile);
 router.delete("/:id", restrict, deleteFile);
 router.patch("/:id/access", restrict, validateBody(updateAccessSchema), updateAccess);
 router.post("/:id/share", restrict, validateBody(shareFileSchema), shareFile);

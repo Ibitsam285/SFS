@@ -7,9 +7,6 @@ const FileMetadataSchema = new mongoose.Schema({
 }, { _id: false });
 
 const AccessControlSchema = new mongoose.Schema({
-  expiry: { type: Date },
-  maxDownloads: { type: Number, default: null },
-  downloads: { type: Number, default: 0 },
   revoked: { type: Boolean, default: false }
 }, { _id: false });
 

@@ -12,8 +12,8 @@ POST /api/auth/signUp
 Content-Type: application/json
 
 {
-  "username": "alice",
-  "email": "alice@example.com",
+  "username": "user",
+  "email": "user@example.com",
   "password": "strongpassword"
 }
 ```
@@ -24,7 +24,7 @@ POST /api/auth/signIn
 Content-Type: application/json
 
 {
-  "username": "alice",
+  "username": "user",
   "password": "strongpassword"
 }
 ```
@@ -197,18 +197,6 @@ Cookie: uid=...
 ```http
 DELETE /api/files/{fileId}
 Cookie: uid=...
-```
-
-**Update file access controls**
-```http
-PATCH /api/files/{fileId}/access
-Cookie: uid=...
-
-{
-  "expiry": "2025-12-31T23:59:59.999Z",
-  "maxDownloads": 3,
-  "revoked": false
-}
 ```
 
 **Share file with users/groups**
@@ -412,7 +400,7 @@ Cookie: uid=...
 
 | Variable      | Description                       | Example                   |
 |---------------|-----------------------------------|---------------------------|
-| PORT          | Server port                       | 3000                      |
+| PORT          | Server port                       | 8000                      |
 | MONGO_URI     | MongoDB connection string         | mongodb://localhost/db    |
 | JWT_SECRET    | JWT signing secret                | my_super_secret           |
 | SALT_ROUNDS   | bcrypt salt rounds (integer)      | 10                        |

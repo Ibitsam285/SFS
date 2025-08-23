@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const http = require("http");
 const socketio = require("socket.io");
+
 const connectDB = require("./src/config/db");
 
 const authRouter = require("./src/routes/auth");

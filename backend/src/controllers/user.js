@@ -74,7 +74,6 @@ async function deleteUser(req, res) {
     targetId: req.params.id
   });
 
-  res.clearCookie("uid");
   res.json({ message: "User deleted successfully" });
 }
 
@@ -98,14 +97,12 @@ async function changeUserRole(req, res) {
     targetId: req.params.id
   });
 
-  // Save notification to DB
   const notification = await sendNotification({
     recipientId: req.params.id,
     type: "ROLE_CHANGED",
     content: `Your role was changed to ${req.body.role} by admin.`
   });
 
-  // Emit via Socket.IO
   req.app.get("io").to(req.params.id.toString()).emit("notification", notification);
 
   res.json({ message: "Role updated", user });

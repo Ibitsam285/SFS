@@ -14,12 +14,6 @@ async function listFiles(req, res) {
       return res.status(403).json({ error: "Forbidden" });
 
     const files = await File.find({ recipientGroups: groupId });
-    await logAction({
-      actorId: req.user._id,
-      action: "LIST_GROUP_FILES",
-      targetType: "Group",
-      targetId: groupId
-    });
     return res.json(files);
   }
 
@@ -29,13 +23,6 @@ async function listFiles(req, res) {
   const groupFiles = await File.find({ recipientGroups: { $in: groups } });
   const all = [...owned, ...shared, ...groupFiles]
     .filter((v, i, a) => a.findIndex(t => t._id.equals(v._id)) === i);
-
-  await logAction({
-    actorId: req.user._id,
-    action: "LIST_FILES",
-    targetType: "User",
-    targetId: req.user._id
-  });
 
   res.json(all);
 }
@@ -86,38 +73,6 @@ async function getFile(req, res) {
   });
 
   res.json(file);
-}
-
-async function downloadFile(req, res) {
-  const file = await File.findById(req.params.id);
-  if (!file) return res.status(404).json({ error: "File not found" });
-  const allowed =
-    file.ownerId.equals(req.user._id) ||
-    file.recipients.some(id => id.equals(req.user._id)) ||
-    (req.user.groups && file.recipientGroups.some(gid => req.user.groups.includes(gid)));
-  if (!allowed && req.user.role !== "admin")
-    return res.status(403).json({ error: "Forbidden" });
-  if (file.accessControl.revoked)
-    return res.status(403).json({ error: "File access revoked" });
-  if (file.accessControl.expiry && new Date() > file.accessControl.expiry)
-    return res.status(403).json({ error: "File access expired" });
-  if (file.accessControl.maxDownloads && file.accessControl.downloads >= file.accessControl.maxDownloads)
-    return res.status(403).json({ error: "Max downloads reached" });
-  file.accessControl.downloads = (file.accessControl.downloads || 0) + 1;
-  await file.save();
-
-  await logAction({
-    actorId: req.user._id,
-    action: "DOWNLOAD_FILE",
-    targetType: "File",
-    targetId: file._id
-  });
-
-  res.json({
-    filename: file.filename,
-    encryptedData: file.encryptedData,
-    metadata: file.metadata,
-  });
 }
 
 async function deleteFile(req, res) {
@@ -256,7 +211,6 @@ module.exports = {
   uploadFile,
   listFiles,
   getFile,
-  downloadFile,
   deleteFile,
   updateAccess,
   shareFile,
